@@ -9,7 +9,9 @@ import json
 
 
 import base64
-app=Dash()
+
+app =Dash(__name__)
+server = app.server 
 
 data1=gpd.read_file(r"kenya.gpkg")
 town=gpd.read_file(r"town.gpkg")
@@ -313,5 +315,5 @@ def update_image(selected_county):
 
 
 
-if __name__=='__main__':
-    app.run(debug=False)
+if __name__ == '__main__':
+    app.run_server(debug=False)

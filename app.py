@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 import matplotlib.pyplot as plt
 import geopandas as gpd
+import os
 import io
 import dash_leaflet as dl
 import json
@@ -318,4 +319,5 @@ def update_image(selected_county):
 server = app.server
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    port = int(os.environ.get("PORT", 8080))  # Default to 8080
+    app.run(debug=False, host="0.0.0.0", port=port)

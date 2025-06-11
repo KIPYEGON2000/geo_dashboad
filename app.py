@@ -4,6 +4,7 @@ import plotly.express as px
 import matplotlib.pyplot as plt
 import geopandas as gpd
 import os
+import dash_bootstrap_components as dbc
 import io
 import dash_leaflet as dl
 import json
@@ -11,7 +12,8 @@ import json
 
 import base64
 
-app = Dash(__name__)
+
+app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 
 data1=gpd.read_file(r"kenya.gpkg")
@@ -50,36 +52,60 @@ import matplotlib.patches as patches
 
 
 
-app.layout=html.Div([html.Div(children="Dashboad",style={'textAlign': 'center', 'color': 'blue', 'fontSize': 50}),
-     
-            html.Br(),
-            html.Label("choose the county to plot",style={'textAlign': 'center', 'color': 'red','fontSize': 30}),
-            dcc.Dropdown(options=data1['NAME_2'].unique(),value="Nairobi",id="counties"),
-            html.Br(),
-            html.Img(id='plot'),
-             html.Br(),
-            
-            dash_table.DataTable(data=dat.to_dict('records'), page_size=10,style_table={'overflowX':'auto'},style_cell={'textAlign':'left'}),
-            dcc.Graph(figure=px.histogram(dat, x='NAME_2', y='TOWN')),
-              dl.Map(
-    [
-        dl.TileLayer(),
-        dl.GeoJSON(id="geojson", options=dict(style=dict(color="blue"))),
-        dl.GeoJSON(id="geojson1", options=dict(style=dict(color="blue")))
-    ],
-    id="leaflet-map",
-    center=[0, 0],  # default center
-    zoom=9,
-    style={"height": "80vh", "width": "80%", "float": "right"}
-),
-         html.Div(children="lets take Geospatial and Survey to a new level",style={'textAlign': 'center', 'color': 'red', 'fontSize': 20}),
 
+app.layout = dbc.Container([
+    html.Div(children="Dashboard", style={'textAlign': 'center', 'color': 'blue', 'fontSize': 50}),
+    
+    dbc.Row([
+        dbc.Col(html.Label("Choose the county to plot", style={'textAlign': 'center', 'color': 'red', 'fontSize': 30}), width=12)
+    ]),
+    
+    dbc.Row([
+        dbc.Col(dcc.Dropdown(options=data1['NAME_2'].unique(), value="Nairobi", id="counties", style={'width': '100%'}), width=12)
+    ]),
 
-     
+    html.Br(),
+    dbc.Row([
+        dbc.Col(html.Img(id='plot', style={'width': '100%', 'height': 'auto'}), width=12)
+    ]),
 
-            
+    html.Br(),
+    dbc.Row([
+        dbc.Col(dash_table.DataTable(
+            data=dat.to_dict('records'), 
+            page_size=10, 
+            style_table={'overflowX': 'auto'}, 
+            style_cell={'textAlign': 'left'}
+        ), width=12)
+    ]),
 
-            ])
+    dbc.Row([
+        dbc.Col(dcc.Graph(figure=px.histogram(dat, x='NAME_2', y='TOWN'), style={'width': '100%'}), width=12)
+    ]),
+     html.Br(),
+
+    dbc.Row([
+        dbc.Col(dl.Map([
+            dl.TileLayer(),
+            dl.GeoJSON(id="geojson", options=dict(style=dict(color="blue"))),
+            dl.GeoJSON(id="geojson1", options=dict(style=dict(color="blue")))
+        ],
+        id="leaflet-map",
+        center=[0, 0],
+        zoom=9,
+        style={"height": "70vh", "width": "100%"}), width=12)
+    ]),
+
+    html.Br(),
+    dbc.Row([
+        dbc.Col(html.Div(children="Let's take Geospatial and Survey to a new level", style={'textAlign': 'center', 'color': 'red', 'fontSize': 20}), width=12)
+    ]),
+
+    html.Br(),
+    dbc.Row([
+        dbc.Col(html.Label("Created By Kipyegon Amos", style={'textAlign': 'center', 'color': 'blue', 'fontSize': 30}), width=4, className="text-center")
+    ], className="mt-3")
+], fluid=True)
 
 @callback(
         Output(component_id='plot',component_property='src'),

@@ -103,7 +103,7 @@ app.layout = dbc.Container([
 
     html.Br(),
     dbc.Row([
-        dbc.Col(html.Label("Created By Kipyegon Amos", style={'textAlign': 'center', 'color': 'blue', 'fontSize': 30}), width=4, className="text-center")
+        dbc.Col(html.Label("Created By Kipyegon Amos", style={'textAlign': 'center', 'color': 'blue', 'fontSize': 30}), width=12, className="text-center")
     ], className="mt-3")
 ], fluid=True)
 

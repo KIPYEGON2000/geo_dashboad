@@ -50,7 +50,7 @@ import matplotlib.patches as patches
 
 
 app.layout = dbc.Container([
-    html.Div(children="Geospatial Automation and Dashboard", style={'textAlign': 'center', 'color': 'blue', 'fontSize': 50}),
+    html.Div(children="Geo-Automation and Dashboard", style={'textAlign': 'center', 'color': 'blue', 'fontSize': 40}),
     
     dbc.Row([
         dbc.Col(html.Label("Choose the county to plot", style={'textAlign': 'center', 'color': 'red', 'fontSize': 30}), width=12)
@@ -117,7 +117,7 @@ app.layout = dbc.Container([
     [Input("loading", "children")]
 )
 def update_content(_):
-    return "Your"
+    return "Your dashboard is ready!"
 
 @callback(
         Output(component_id='plot',component_property='src'),

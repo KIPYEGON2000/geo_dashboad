@@ -49,19 +49,15 @@ text18="APPROVED DEVELOPMENT PLAN NUMBER"
 import matplotlib.patches as patches
 
 
-
-
-
-
 app.layout = dbc.Container([
-    html.Div(children="Dashboard", style={'textAlign': 'center', 'color': 'blue', 'fontSize': 50}),
+    html.Div(children="Geospatial Automation and Dashboard", style={'textAlign': 'center', 'color': 'blue', 'fontSize': 50}),
     
     dbc.Row([
         dbc.Col(html.Label("Choose the county to plot", style={'textAlign': 'center', 'color': 'red', 'fontSize': 30}), width=12)
     ]),
     
     dbc.Row([
-        dbc.Col(dcc.Dropdown(options=data1['NAME_2'].unique(), value="Nairobi", id="counties", style={'width': '100%'}), width=12)
+        dbc.Col(dcc.Dropdown(options=data1['NAME_2'].unique(), value="Nairobi", id="counties", style={'width': '100%'}), width=5)
     ]),
 
     html.Br(),
@@ -71,17 +67,24 @@ app.layout = dbc.Container([
 
     html.Br(),
     dbc.Row([
+        dcc.Loading(
+        id="loading",
+        type="circle",
+        children=[
+            html.Div(id="content")
+        ]
+    ),
         dbc.Col(dash_table.DataTable(
             data=dat.to_dict('records'), 
             page_size=10, 
             style_table={'overflowX': 'auto'}, 
             style_cell={'textAlign': 'left'}
-        ), width=12)
-    ]),
+        ), width=11,align="center")
+    ],justify="center"),
 
     dbc.Row([
-        dbc.Col(dcc.Graph(figure=px.histogram(dat, x='NAME_2', y='TOWN'), style={'width': '100%'}), width=12)
-    ]),
+        dbc.Col(dcc.Graph(figure=px.histogram(dat, x='NAME_2', y='TOWN'), style={'width': '100%'}), width=10,align="center")
+    ],justify="center"),
      html.Br(),
 
     dbc.Row([
@@ -93,8 +96,9 @@ app.layout = dbc.Container([
         id="leaflet-map",
         center=[0, 0],
         zoom=9,
-        style={"height": "70vh", "width": "100%"}), width=12)
-    ]),
+        style={"height": "70vh", "width": "100%",'textAlign': 'center'}), width=10,
+            align="center")
+    ],justify="center"),
 
     html.Br(),
     dbc.Row([
@@ -103,9 +107,17 @@ app.layout = dbc.Container([
 
     html.Br(),
     dbc.Row([
-        dbc.Col(html.Label("Created By Kipyegon Amos", style={'textAlign': 'center', 'color': 'blue', 'fontSize': 30}), width=12, className="text-center")
+        dbc.Col(html.Label("Created By Kipyegon Amos", style={'textAlign': 'center', 'color': 'blue', 'fontSize': 30}), width=12, className="text-center",align="center")
     ], className="mt-3")
 ], fluid=True)
+
+
+@app.callback(
+    Output("content", "children"),
+    [Input("loading", "children")]
+)
+def update_content(_):
+    return "Your"
 
 @callback(
         Output(component_id='plot',component_property='src'),

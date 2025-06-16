@@ -1,4 +1,4 @@
-from dash import Dash, html,dash_table,dcc,callback,Output, Input
+from dash import Dash, html,dash_table,dcc,callback,Output, Input,State
 import pandas as pd
 import plotly.express as px
 import matplotlib.pyplot as plt
@@ -8,6 +8,8 @@ import dash_bootstrap_components as dbc
 import io
 import dash_leaflet as dl
 import json
+import dash
+
 
 
 import base64
@@ -53,8 +55,28 @@ app.layout = dbc.Container([
     html.Div(children="Geo-Automation and Dashboard", style={'textAlign': 'center', 'color': 'blue', 'fontSize': 40}),
     
     dbc.Row([
-        dbc.Col(html.Label("Choose the county to plot", style={'textAlign': 'center', 'color': 'red', 'fontSize': 30}), width=12)
-    ]),
+        dbc.Col(html.Label("Choose the county to plot", style={'textAlign': 'center', 'color': 'red', 'fontSize': 30}), width=5),
+        
+    dbc.Col([
+        dcc.Upload(
+            id='upload-geo-file',
+            children=html.Div(['Drag and Drop or ', html.A('Select a Geospatial File')]),
+            style={
+                'width': '100%',
+                'height': '60px',
+                'lineHeight': '60px',
+                'borderWidth': '1px',
+                'borderStyle': 'dashed',
+                'borderRadius': '5px',
+                'textAlign': 'center',
+                'margin': '10px'
+            },
+            multiple=False
+        ),
+        html.Div(id='upload-feedback')
+    ], width=6)
+], justify="center"),
+
     
     dbc.Row([
         dbc.Col(dcc.Dropdown(options=data1['NAME_2'].unique(), value="Nairobi", id="counties", style={'width': '100%'}), width=5)
@@ -87,18 +109,32 @@ app.layout = dbc.Container([
     ],justify="center"),
      html.Br(),
 
-    dbc.Row([
+   dbc.Row([
         dbc.Col(dl.Map([
             dl.TileLayer(),
-            dl.GeoJSON(id="geojson", options=dict(style=dict(color="blue"))),
-            dl.GeoJSON(id="geojson1", options=dict(style=dict(color="blue")))
+            dl.GeoJSON(id="geojson", format="geojson", options=dict(
+                style={
+                    'fillColor': 'blue',
+                    'color': 'black',
+                    'weight': 1,
+                    'fillOpacity': 0.6
+                }
+            )),
+            dl.GeoJSON(id="geojson1", format="geojson", options=dict(
+                style={
+                    'fillColor': 'red',
+                    'color': 'black',
+                    'weight': 1,
+                    'fillOpacity': 0.6
+                }
+            ))
         ],
         id="leaflet-map",
         center=[0, 0],
         zoom=9,
-        style={"height": "70vh", "width": "100%",'textAlign': 'center'}), width=10,
+        style={"height": "70vh", "width": "100%", 'textAlign': 'center'}), width=10,
             align="center")
-    ],justify="center"),
+    ], justify="center"),
 
     html.Br(),
     dbc.Row([
@@ -106,49 +142,116 @@ app.layout = dbc.Container([
     ]),
 
     html.Br(),
-    dbc.Row([
+   
+  dbc.Row([
+    dbc.Col(
+        html.A("Connect with me; My Portfolio", 
+               href="https://kipyegon2000.github.io/amos-portfolio/", 
+               target="_blank", 
+               style={
+                   "fontWeight": "bold",
+                   "textAlign": "center",
+                   "display": "block",
+                   'fontSize': 30
+
+               }),
+        width="auto", className="mx-auto"
+    )
+]),
+ dbc.Row([
         dbc.Col(html.Label("Created By Kipyegon Amos", style={'textAlign': 'center', 'color': 'blue', 'fontSize': 30}), width=12, className="text-center",align="center")
-    ], className="mt-3")
+    ], className="mt-3"),
+    
+    dcc.Store(id='geojson-store'),
+    dcc.Store(id='geojson-bounds'),
+    dcc.Store(id='base-bounds'),
 ], fluid=True)
 
 
+import tempfile
 @app.callback(
-    Output("content", "children"),
-    [Input("loading", "children")]
+    Output('geojson-store', 'data'),
+    Output('geojson-bounds', 'data'),
+    Output('base-bounds', 'data'),
+    Output('upload-feedback', 'children'),
+    Input('upload-geo-file', 'contents'),
+    State('upload-geo-file', 'filename'),
 )
-def update_content(_):
-    return "Your dashboard is ready!"
+def handle_geo_upload(contents, filename):
+    if contents is None:
+        return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
+    content_type, content_string = contents.split(',')
+    decoded = base64.b64decode(content_string)
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(filename)[1]) as tmp:
+        tmp.write(decoded)
+        temp_path = tmp.name
+
+    try:
+        gdf = gpd.read_file(temp_path)
+        gdf = gdf.to_crs(epsg=21037)
+        base_bound = gdf.to_crs(epsg=4326)
+        base_bound = list(base_bound.total_bounds)
+        bound = list(gdf.total_bounds)
+        json_data = json.loads(gdf.to_json())
+        return json_data, bound, base_bound, f"✅ Uploaded: {filename}"
+    except Exception as e:
+        return dash.no_update, dash.no_update, dash.no_update, f"❌ Error reading file: {e}"
+    finally:
+        try:
+            os.unlink(temp_path)
+        except:
+            pass
 
 @callback(
-        Output(component_id='plot',component_property='src'),
-           Output(component_id="geojson", component_property="data"),
-           Output(component_id="geojson1", component_property="data"),
-        Output(component_id="leaflet-map", component_property="center"),
-        Input(component_id='counties',component_property='value')
-        
+    Output(component_id='plot', component_property='src'),
+    Output(component_id="geojson", component_property="data"),
+    Output(component_id="geojson1", component_property="data"),
+    Output(component_id="leaflet-map", component_property="center"),
+    Input(component_id='counties', component_property='value'),
+    Input(component_id='geojson-store', component_property='data'),
+    Input(component_id="geojson-bounds", component_property="data"),
+    Input(component_id="base-bounds", component_property="data"),
 )
+def update_image(selected_county, uploaded_geojson, bound, base_bound):
+    if uploaded_geojson:
+        # Process uploaded data
+        data2 = gpd.GeoDataFrame.from_features(uploaded_geojson['features'])
+        data2.crs = "EPSG:21037"  # Ensure CRS is set
+        geojson = data2.to_crs(epsg=4326)
+        geojson_data = json.loads(geojson.to_json())
+        bounds = base_bound
+        bou = bound
+        selected_county="study area"
+        
+        # For points, use point style; for polygons, use polygon style
+        if all(geom.type in ['Point', 'MultiPoint'] for geom in data2.geometry):
+            geojson1 = None  # No secondary data for points
+        else:
+            geojson1 = geojson_data  # Use same data for polygons
+    else:
+        # Process county data
+        data2 = data1[data1['NAME_2'] == selected_county]
+        data3 = data2.unary_union
+        da = data2.to_crs(epsg=4326)
+        geojson_data = json.loads(da.to_json())
+        bounds = da.total_bounds
+        bou = data2.total_bounds
+        tao = town[town.geometry.within(data3)]
+        ta = tao.to_crs(epsg=4326)
+        geojson1 = json.loads(ta.to_json())
 
-def update_image(selected_county):
-    data2=data1[data1['NAME_2']==selected_county]
-    data3=data2.unary_union
-    
-    da=data2.to_crs(epsg=4326)
-    geojson = json.loads(da.to_json())
-    bounds = da.total_bounds  # [minx, miny, maxx, maxy]
-   # [minx, miny, maxx, maxy]
+    # Calculate center for map
     center_lon = (bounds[0] + bounds[2]) / 2
     center_lat = (bounds[1] + bounds[3]) / 2
     center = [center_lat, center_lon]
-    tao=town[town.geometry.within(data3)]
-    ta=tao.to_crs(epsg=4326)
-    geojson1 = json.loads(ta.to_json())
+   
 
-    minx, miny, maxx, maxy=data2.total_bounds 
+    minx, miny, maxx, maxy=bou 
     
     width, height = maxx - minx, maxy - miny
-    area  = width * height
-
-
+    
     map_width = maxx - minx  
     map_height = maxy - miny 
 
@@ -159,7 +262,7 @@ def update_image(selected_county):
     a4_height_in=a4_height
 
     # Available scales
-    scales = [100,500,1000, 2500, 5000, 10000, 25000, 50000,100000]
+    scales = [100,500,1000, 2500, 5000, 10000, 25000, 50000,100000,250000,500000,1000000]
 
     # Calculate the real-world distances covered by A4 at each scale
     best_scale = None
@@ -194,26 +297,31 @@ def update_image(selected_county):
 
     # Plot the map
     data2.plot(ax=ax, color="none", edgecolor='black')
-    tao.plot(ax=ax,color='brown')
+    if uploaded_geojson:
+        pass
 
-    for idx, row in tao.iterrows():
-        if row.geometry.is_empty:
-            continue 
-        else: 
-            ax.annotate(
-                text=row['TOWN'],  
-                xy=(row.geometry.x, row.geometry.y), 
-                xytext=(1, 1), 
-                textcoords="offset points",
-                fontsize=6,
-                color="black",
-                ha='left',  # Horizontal alignment
-                va='bottom'  # Vertical alignment
-            )
+    else:
+        tao.plot(ax=ax,color='brown')
 
-    # Add title and grid
-    size = "A4"
-    ax.set_title(f'map of {selected_county} and its Towns Scale 1:{best_scale} {size}')
+    
+
+        for idx, row in tao.iterrows():
+            if row.geometry.is_empty:
+                continue 
+            else: 
+                ax.annotate(
+                    text=row['TOWN'],  
+                    xy=(row.geometry.x, row.geometry.y), 
+                    xytext=(1, 1), 
+                    textcoords="offset points",
+                    fontsize=6,
+                    color="black",
+                    ha='left',  # Horizontal alignment
+                    va='bottom'  # Vertical alignment
+                )
+
+    
+    ax.set_title(f'Map  of {selected_county} Scale 1:{best_scale}')
 
     ax.grid(True, color='blue', linestyle='--', linewidth=0.7)
     # Get gridline positions
@@ -259,7 +367,7 @@ def update_image(selected_county):
     text1(1.12,0.5,text9,7)
     text1(1.12,0.45,text10,14)
     text1(1.12,0.42,text11,7)
-    import pandas as pd
+  
     date=pd.Timestamp.today().strftime('%d-%m-%Y')
     name="Kipyegon Amos"
     text12=f" Scale :   {scale}\n \nDate:   {date}\n \nPrepared by:   {name}\n \nDrawn by:   Machine"
@@ -349,7 +457,7 @@ def update_image(selected_county):
     encoded = base64.b64encode(buf.read()).decode("utf-8")
     buf.close()
 
-    return f"data:image/png;base64,{encoded}",geojson,geojson1,center
+    return f"data:image/png;base64,{encoded}", geojson_data, geojson1, center
 
 
 

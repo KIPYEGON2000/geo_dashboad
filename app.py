@@ -17,6 +17,7 @@ import base64
 
 app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
 
+app.title = "geo dashboard"
 
 data1=gpd.read_file(r"kenya.gpkg")
 town=gpd.read_file(r"town.gpkg")
@@ -52,6 +53,8 @@ import matplotlib.patches as patches
 
 
 app.layout = dbc.Container([
+   
+
     html.Div(children="Geo-Automation and Dashboard", style={'textAlign': 'center', 'color': 'blue', 'fontSize': 40}),
     
     dbc.Row([
@@ -60,7 +63,7 @@ app.layout = dbc.Container([
     dbc.Col([
         dcc.Upload(
             id='upload-geo-file',
-            children=html.Div(['Drag and Drop or ', html.A('Select a Geospatial File')]),
+            children=html.Div(['Drag and Drop or ', html.A('Select a Geospatial File(zipped shp or GeoPackage)')]),
             style={
                 'width': '100%',
                 'height': '60px',

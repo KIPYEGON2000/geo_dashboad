@@ -53,9 +53,11 @@ import matplotlib.patches as patches
 
 
 app.layout = dbc.Container([
+    dbc.Row([
+        dbc.Col([
    
 
-    html.Div(children="Geo-Automation and Dashboard", style={'textAlign': 'center', 'color': 'blue', 'fontSize': 40}),
+    html.Div(children="Geo-Automation and Dashboard",className="title1")])]),
     
     dbc.Row([
         dbc.Col(html.Label("Choose the county to plot", style={'textAlign': 'center', 'color': 'red', 'fontSize': 30}), width=5),
@@ -63,7 +65,7 @@ app.layout = dbc.Container([
     dbc.Col([
         dcc.Upload(
             id='upload-geo-file',
-            children=html.Div(['Drag and Drop or ', html.A('Select a Geospatial File(zipped shp or GeoPackage)')]),
+            children=html.Div(['Drag and Drop or ', html.A('Select a Geospatial File(zipped shp or GeoPackage)')],className="app-header"),
             style={
                 'width': '100%',
                 'height': '60px',
@@ -87,8 +89,8 @@ app.layout = dbc.Container([
 
     html.Br(),
     dbc.Row([
-        dbc.Col(html.Img(id='plot', style={'width': '100%', 'height': 'auto'}), width=12)
-    ]),
+        dbc.Col(html.Img(id='plot', style={'width': '100%', 'height': 'auto'}), width=11)
+    ],justify="center"),
 
     html.Br(),
     dbc.Row([
@@ -99,12 +101,7 @@ app.layout = dbc.Container([
             html.Div(id="content")
         ]
     ),
-        dbc.Col(dash_table.DataTable(
-            data=dat.to_dict('records'), 
-            page_size=10, 
-            style_table={'overflowX': 'auto'}, 
-            style_cell={'textAlign': 'left'}
-        ), width=11,align="center")
+  
     ],justify="center"),
 
     dbc.Row([
@@ -156,13 +153,14 @@ app.layout = dbc.Container([
                    "textAlign": "center",
                    "display": "block",
                    'fontSize': 30
+                  
 
                }),
         width="auto", className="mx-auto"
     )
 ]),
  dbc.Row([
-        dbc.Col(html.Label("Created By Kipyegon Amos", style={'textAlign': 'center', 'color': 'blue', 'fontSize': 30}), width=12, className="text-center",align="center")
+        dbc.Col(html.H3("Created By Kipyegon Amos", style={'textAlign': 'center', 'color': 'blue', 'fontSize': 30}), width=12, className="text-center",align="center")
     ], className="mt-3"),
     
     dcc.Store(id='geojson-store'),
@@ -445,7 +443,7 @@ def update_image(selected_county, uploaded_geojson, bound, base_bound):
 
 
         # Add image as inset (e.g., logo)
-    img = mpimg.imread('amos.png')
+    img = mpimg.imread('assets/amos.png')
     inset_ax = ax.inset_axes([0, 0.94, 0.1, 0.1])  # x, y, width, height in relative coords
     inset_ax.imshow(img)
     inset_ax.axis('off')

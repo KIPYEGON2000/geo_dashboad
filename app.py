@@ -194,7 +194,7 @@ app.layout = dbc.Container([
 
     ]),
     dbc.Row([
-        dbc.Button("Download Filtered KMZ", id="download-kmz-btn", color="success", className="mb-3"),
+        dbc.Button("Download KMZ", id="download-kmz-btn", color="success", className="mb-3"),
         dcc.Download(id="download-kmz"),
         dcc.Store(id='filtered-data')
     ]),

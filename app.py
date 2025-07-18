@@ -539,8 +539,8 @@ def handle_upload(contents, filename):
    
     all_cols = df.columns.tolist()
     options = [{'label': col, 'value': col} for col in all_cols]
-    cat_cols = df.select_dtypes(include='object').columns.tolist()
-    cat_options = [{'label': col, 'value': col} for col in cat_cols]
+ 
+    cat_options = [{'label': col, 'value': col} for col in all_cols]
 
   
 
@@ -562,6 +562,7 @@ def handle_upload(contents, filename):
 )
 def download_kmz(n_clicks, data,x_col, y_col,label_col ):
     df1 = pd.DataFrame(data)
+    df1=df1.dropna(subset=y_col)
     
 
     gdf = gpd.GeoDataFrame(df1, geometry=gpd.points_from_xy(df1[x_col], df1[y_col]), crs="EPSG:4326")

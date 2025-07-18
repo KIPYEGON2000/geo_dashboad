@@ -8,11 +8,32 @@ import dash_bootstrap_components as dbc
 import io
 import dash_leaflet as dl
 import json
+import simplekml
 import dash
 
 
 
 import base64
+
+
+def gdf_to_kmz(gdf, kmz_path, name_field=None):
+    if not isinstance(gdf, gpd.GeoDataFrame):
+        raise TypeError("Input must be a GeoDataFrame")
+
+    if not all(gdf.geometry.geom_type == "Point"):
+        raise ValueError("This function supports only Point geometries")
+
+    if name_field and name_field not in gdf.columns:
+        raise ValueError(f"'{name_field}' not found in the GeoDataFrame")
+
+    kml = simplekml.Kml()
+    for _, row in gdf.iterrows():
+        geom = row.geometry
+        name = str(row[name_field]) if name_field else "Point"
+        kml.newpoint(name=name, coords=[(geom.x, geom.y)])
+
+    kml.savekmz(kmz_path)
+    print(f"✅ KMZ saved to: {kmz_path}")
 
 
 app = Dash(external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -99,7 +120,7 @@ app.layout = dbc.Container([
         type="circle",
         children=[
             html.Div(id="content")
-        ]
+        ] 
     ),
   
     ],justify="center"),
@@ -142,6 +163,41 @@ app.layout = dbc.Container([
     ]),
 
     html.Br(),
+
+    dbc.Row([
+            html.H2("Ganerate Kmz here(upload csv)", className="text-center mt-3 mb-4"),
+
+    dcc.Upload(
+        id='upload-data',
+        children=html.Div(['📁 Drag and Drop or ', html.A('Select a CSV File')]),
+        style={
+            'width': '100%', 'height': '60px', 'lineHeight': '60px',
+            'borderWidth': '1px', 'borderStyle': 'dashed',
+            'borderRadius': '5px', 'textAlign': 'center',
+            'margin': '10px'
+        },
+        multiple=False
+    ),
+         dbc.Col([
+
+            dbc.Label("X column:"),
+            dcc.Dropdown(id='x-column')
+        ], width=2),
+        dbc.Col([
+            dbc.Label("Y column:"),
+            dcc.Dropdown(id='y-column')
+        ], width=2),
+           dbc.Col([
+            dbc.Label("Label column:"),
+            dcc.Dropdown(id='label-column')
+        ], width=2),
+
+    ]),
+    dbc.Row([
+        dbc.Button("Download Filtered KMZ", id="download-kmz-btn", color="success", className="mb-3"),
+        dcc.Download(id="download-kmz"),
+        dcc.Store(id='filtered-data')
+    ]),
    
   dbc.Row([
     dbc.Col(
@@ -461,6 +517,63 @@ def update_image(selected_county, uploaded_geojson, bound, base_bound):
     return f"data:image/png;base64,{encoded}", geojson_data, geojson1, center
 
 
+@app.callback(
+   
+   
+    Output('x-column', 'options'),
+    Output('y-column', 'options'),
+    Output('filtered-data', 'data'),
+    Output('label-column', 'options'),
+    
+  
+    Input('upload-data', 'contents'),
+    State('upload-data', 'filename'),
+)
+def handle_upload(contents, filename):
+    if contents is None:
+        return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
+    content_type, content_string = contents.split(',')
+    decoded = base64.b64decode(content_string)
+    df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+   
+    all_cols = df.columns.tolist()
+    options = [{'label': col, 'value': col} for col in all_cols]
+    cat_cols = df.select_dtypes(include='object').columns.tolist()
+    cat_options = [{'label': col, 'value': col} for col in cat_cols]
+
+  
+
+    return  options, options,df.to_dict('records'),cat_options
+
+@app.callback(
+       
+       
+    Output("download-kmz", "data"),
+
+    Input("download-kmz-btn", "n_clicks"),
+    State("filtered-data", "data"),
+    State("x-column", "value"),
+    State("y-column", "value"),
+     State("label-column", "value"),
+ 
+
+    prevent_initial_call=True
+)
+def download_kmz(n_clicks, data,x_col, y_col,label_col ):
+    df1 = pd.DataFrame(data)
+    
+
+    gdf = gpd.GeoDataFrame(df1, geometry=gpd.points_from_xy(df1[x_col], df1[y_col]), crs="EPSG:4326")
+    kmz_path = "filtered_output.kmz"
+    gdf_to_kmz(gdf, kmz_path, name_field=label_col)
+
+    with open(kmz_path, "rb") as f:
+        content = f.read()
+    encoded = base64.b64encode(content).decode()
+    os.remove(kmz_path)
+
+    return dict(content=encoded, filename="filtered_data.kmz", base64=True)
 
 
 server = app.server

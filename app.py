@@ -26,6 +26,7 @@ def gdf_to_kmz(gdf, kmz_path, name_field=None):
     if name_field and name_field not in gdf.columns:
         raise ValueError(f"'{name_field}' not found in the GeoDataFrame")
 
+
     kml = simplekml.Kml()
     for _, row in gdf.iterrows():
         geom = row.geometry
@@ -86,7 +87,7 @@ app.layout = dbc.Container([
     dbc.Col([
         dcc.Upload(
             id='upload-geo-file',
-            children=html.Div(['Drag and Drop or ', html.A('Select a Geospatial File(zipped shp or GeoPackage)')],className="app-header"),
+            children=html.Div(['Drag/', html.A('Select File(zipped shp or GeoPackage)')],className="app-header"),
             style={
                 'width': '100%',
                 'height': '60px',
@@ -344,7 +345,7 @@ def update_image(selected_county, uploaded_geojson, bound, base_bound):
     plot_width = a4_width_in * best_scale
     plot_height = a4_height_in * best_scale
     # Set up plot
-    fig, ax = plt.subplots(figsize=(a4_width_in, a4_height_in))
+    fig, ax = plt.subplots(figsize=(a4_width_in, a4_height_in),facecolor='lightblue')
     plt.subplots_adjust(left=0, right=0.8, bottom=0.2, top=0.9, wspace=0.4, hspace=0.4)
 
     # Set map bounds according to scale
@@ -443,19 +444,19 @@ def update_image(selected_county, uploaded_geojson, bound, base_bound):
 
     bbox_props = dict(facecolor="white", edgecolor="red", boxstyle="round,pad=0.3", alpha=0.7)
     plt.text(1.05, 0.55, "", transform=ax.transAxes, bbox=bbox_props)
-    def rect(x,y,width,height,color='black'):
+    def rect(x,y,width,height,color='black',facecolor="none",zorder=1):
         # x, y = 1.03, 0  # bottom-left corner coordinates
         # width, height = 0.4, 1  # rectangle dimensions
 
         # Create and add the rectangle patch
         rect = patches.Rectangle(
             (x, y), width, height,
-            linewidth=1, edgecolor=color, facecolor="none", transform=ax.transAxes
+            linewidth=1, edgecolor=color, facecolor=facecolor, transform=ax.transAxes,zorder=zorder
         )
         return fig.patches.append(rect)
     rect(1.11,0,0.38,1)
     rect(1.14,0.9,0.1,0.05)
-    rect(-0.03,-0.06,1.54,1.11,'red')
+    rect(-0.03,-0.06,1.54,1.11,'red',"white",-4)
 
     def lined(x,x1,y,y1):
 
@@ -491,7 +492,7 @@ def update_image(selected_county, uploaded_geojson, bound, base_bound):
                 'N', 
                 xy=(arrow_x, arrow_y), 
                 xytext=(arrow_x, arrow_y - 0.08), 
-                arrowprops=dict(facecolor='white', width=7, headwidth=20),
+                arrowprops=dict(facecolor='black', width=7, headwidth=20),
                 ha='center', va='center', fontsize=10, color='black', xycoords='axes fraction'
             )
     import matplotlib.image as mpimg
@@ -516,7 +517,7 @@ def update_image(selected_county, uploaded_geojson, bound, base_bound):
 
     return f"data:image/png;base64,{encoded}", geojson_data, geojson1, center
 
-
+ 
 @app.callback(
    
    
